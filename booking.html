@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бронирование - {{ screening.film.title }}</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+            background: #C0C0C0;
+        }
+        .screening-info {
+            background: #D3D3D3;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+        }
+        .screening-poster {
+            width: 120px;
+            height: 160px;
+            flex-shrink: 0;
+        }
+        .screening-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .screening-details {
+            flex: 1;
+        }
+        .screen {
+            background: #595959;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .seats-grid {
+            display: grid;
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .seat {
+            width: 35px;
+            height: 35px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .seat.available { background: #ECECEC; color: black; }
+        .seat.available:hover { background: #DBDBDB; }
+        .seat.selected { background: #808080; color: white; }
+        .seat.occupied { background: #494949; color: #ECECEC; cursor: default; }
+        .seat-info {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .booking-form {
+            background: #D3D3D3;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            background: #ECECEC;
+            width: 98.75%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .submit-btn {
+            background: #696969;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .submit-btn:hover { background: #DBDBDB; }
+        .selected-seats { margin: 10px 0; }
+    </style>
+</head>
+<body>
+<h1>Бронирование билетов</h1>
+<div class="screening-info">
+    <div class="screening-poster">
+        {% if screening.film.poster_url %}
+        <img src="{{ screening.film.poster_url }}"
+             alt="{{ screening.film.title }}"
+             style="width: 100%; height: 100%; object-fit: cover;">
+        {% else %}
+        <div style="width: 100%;
+                        height: 100%;
+                        background: #e9ecef;
+                        border-radius: 5px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;">
+        </div>
+        {% endif %}
+    </div>
+    <div class="screening-details">
+        <h2>{{ screening.film.title }}</h2>
+        <p>
+            {{ screening.start_time.strftime('%d.%m.%Y') }}
+            <strong>{{ screening.start_time.strftime('%H:%M') }}</strong>
+        </p>
+        <p><strong>Зал:</strong> {{ screening.hall.name }}</p>
+        <p><strong>Цена за место:</strong> {{ screening.price }} руб.</p>
+    </div>
+</div>
+
+<div class="hall-layout">
+    <div class="screen">ЭКРАН</div>
+
+    <div class="seats-grid" style="grid-template-columns: repeat({{ screening.hall.seats }}, 35px);">
+        {% for row in range(1, screening.hall.rows + 1) %}
+        {% for seat in range(1, screening.hall.seats + 1) %}
+        {% set is_occupied = (row, seat) in occupied_seats %}
+        <button class="seat {% if is_occupied %}occupied{% else %}available{% endif %}"
+                data-row="{{ row }}"
+                data-seat="{{ seat }}"
+                {% if is_occupied %}disabled{% endif %}
+                onclick="toggleSeat(this)">
+            {{ seat }}
+        </button>
+        {% endfor %}
+        <div style="grid-column: 1 / -1; height: 5px;"></div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="seat-info">
+    <div class="info-item">
+        <div style="width: 20px; height: 20px; background: #ECECEC; border-radius: 3px;"></div>
+        <span>Свободно</span>
+    </div>
+    <div class="info-item">
+        <div style="width: 20px; height: 20px; background: #808080; border-radius: 3px;"></div>
+        <span>Выбрано</span>
+    </div>
+    <div class="info-item">
+        <div style="width: 20px; height: 20px; background: #494949; border-radius: 3px;"></div>
+        <span>Занято</span>
+    </div>
+</div>
+
+<div class="booking-form">
+    <h3>Данные для бронирования</h3>
+
+    <div class="selected-seats">
+        <strong>Выбранные места:</strong>
+        <span id="selected-seats-list">Нет</span>
+        <br>
+        <strong>Общая стоимость:</strong>
+        <span id="total-price">0</span> руб.
+    </div>
+
+    <form action="/book" method="POST">
+        <input type="hidden" name="screening_id" value="{{ screening.id }}">
+        <input type="hidden" name="selected_seats" id="selected-seats-input">
+
+        <div class="form-group">
+            <label for="name">Ваше имя:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Телефон:</label>
+            <input type="tel" id="phone" name="phone" required>
+        </div>
+
+        <button type="submit" class="submit-btn">Забронировать</button>
+    </form>
+</div>
+
+
+<script>
+    let selectedSeats = [];
+    const seatPrice = {{ screening.price }};
+
+    function toggleSeat(seatElement) {
+        const row = seatElement.getAttribute('data-row');
+        const seat = seatElement.getAttribute('data-seat');
+        const seatKey = `${row}-${seat}`;
+
+        if (seatElement.classList.contains('selected')) {
+            seatElement.classList.remove('selected');
+            seatElement.classList.add('available');
+            selectedSeats = selectedSeats.filter(s => s !== seatKey);
+        } else {
+            seatElement.classList.remove('available');
+            seatElement.classList.add('selected');
+            selectedSeats.push(seatKey);
+        }
+
+        updateSelectionDisplay();
+    }
+
+    function updateSelectionDisplay() {
+        const seatsList = document.getElementById('selected-seats-list');
+        const seatsInput = document.getElementById('selected-seats-input');
+        const totalPrice = document.getElementById('total-price');
+
+        if (selectedSeats.length > 0) {
+            seatsList.textContent = selectedSeats.map(seat => {
+                const [row, number] = seat.split('-');
+                return `Ряд ${row}, Место ${number}`;
+            }).join('; ');
+
+            totalPrice.textContent = selectedSeats.length * seatPrice;
+        } else {
+            seatsList.textContent = 'Нет';
+            totalPrice.textContent = '0';
+        }
+
+        seatsInput.value = selectedSeats.join(',');
+    }
+
+</script>
+</body>
+</html>

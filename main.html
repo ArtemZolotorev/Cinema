@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Афиша</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+            background: #C0C0C0;
+        }
+        .films-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .film-card {
+            background: #D3D3D3;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            gap: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+        }
+        .film-poster {
+            flex: 0 0 250px;
+        }
+        .film-card img {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        .film-content {
+            flex: 1;
+        }
+        .dates-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .date-tab {
+            padding: 8px 12px;
+            background: #ECECEC;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .date-tab:hover { background: #DBDBDB; }
+        .date-tab.active {
+            background: #808080;
+            color: white;
+            font-weight: bold;
+        }
+        .screening-item {
+            background: #ECECEC;
+            padding: 5px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 4px solid #808080;
+        }
+        .book-btn {
+            background: #696969;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 12px;
+            margin-top: 5px;
+            display: inline-block;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<h1>Кинотеатр "В подвале"</h1>
+<p>Выберите фильм и дату для бронирования:</p>
+
+<div class="films-container">
+    {% for film in films %}
+    <div class="film-card">
+        <div class="film-poster">
+            {% if film.poster_url %}
+            <img src="{{ film.poster_url }}" alt="{{ film.title }}">
+            {% else %}
+            <div style="background: #D3D3D3; height: 350px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+                <span>Нет постера</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="film-content">
+            <h2>{{ film.title }}</h2>
+            <p>{{ film.duration }} мин. | {{ film.genre }} | {{ film.d }}</p>
+
+            <div class="dates-tabs">
+                {% for date in dates %}
+                <div id="tab{{ film.id }}_{{ loop.index0 }}"
+                     class="date-tab {% if date == today %}active{% endif %}"
+                     onclick="showScreenings('film{{ film.id }}', 'date{{ film.id }}_{{ loop.index0 }}', this)">
+                    {{ date.strftime('%d.%m') }}<br>
+                    <small>{{ get_russian_weekday(date) }}</small>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="screenings-list">
+                {% for date in dates %}
+                <div id="date{{ film.id }}_{{ loop.index0 }}" class="{% if date != today %}hidden{% endif %}">
+                    {% if date in film.schedule_by_date and film.schedule_by_date[date] %}
+                    {% for screening in film.schedule_by_date[date] %}
+                    <div class="screening-item">
+                        {{ screening.start_time.strftime('%H:%M') }} | {{ screening.price }} руб.
+                        <br>
+                        <a href="/booking/{{ screening.id }}" class="book-btn">Забронировать</a>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div style="color: #666; font-style: italic; padding: 20px;">
+                        На {{ date.strftime('%d.%m') }} сеансов нет
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    function showScreenings(filmId, dateId, tabElement) {
+        const filmNumber = filmId.replace('film', '');
+        const allScreenings = document.querySelectorAll(`[id^="date${filmNumber}_"]`);
+        allScreenings.forEach(el => el.classList.add('hidden'));
+
+        document.getElementById(dateId).classList.remove('hidden');
+        const allTabs = document.querySelectorAll(`[id^="tab${filmNumber}_"]`);
+        allTabs.forEach(tab => tab.classList.remove('active'));
+        tabElement.classList.add('active');
+    }
+</script>
+</body>
+</html>

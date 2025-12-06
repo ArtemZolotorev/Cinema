@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Успех!</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 0;
+            background: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+        .confirmation-window {
+            background: #D3D3D3;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            border: 2px solid #696969;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .ticket {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="confirmation-window">
+    <h1 style="color: black; text-align: center;;">Бронь подтверждена!</h1>
+    <p>Спасибо, <strong>{{ booking.name }}</strong>! Ваши билеты:</p>
+
+    <div class="ticket">
+        <h2>{{ booking.screening.film.title }}</h2>
+        <p><strong>{{ booking.screening.start_time.strftime('%d.%m.%Y %H:%M') }}</strong></p>
+        <p>Зал: {{ booking.screening.hall.name }}</p>
+        <p>Места:
+            {% for seat in booking.booked_seats %}
+            Ряд {{ seat.row_number }}, Место {{ seat.seat_number }}{% if not loop.last %}; {% endif %}
+            {% endfor %}
+        </p>
+        <p>Общая стоимость: <strong>{{ booking.total_price }} руб.</strong></p>
+    </div>
+
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="/" style="background: #696969;
+                                color: white;
+                                padding: 10px 20px;
+                                text-decoration: none;
+                                border-radius: 5px;">
+            Вернуться на главную
+        </a>
+    </div>
+</div>
+
+<script>
+    document.body.style.overflow = 'hidden';
+    });
+</script>
+</body>
+</html>
